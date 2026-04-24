@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Thí nghiệm Na + H2O</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes fizz {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(2px, -1px) rotate(5deg); }
+            50% { transform: translate(-2px, 1px) rotate(-5deg); }
+            75% { transform: translate(1px, 1px) rotate(3deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        @keyframes bubble-rise {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-100px); opacity: 0; }
+        }
+
+        .sodium-ball {
+            width: 16px;
+            height: 16px;
+            background: radial-gradient(circle at 30% 30%, #f0f0f0, #999);
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 12px rgba(255,255,255,0.9), 0 2px 4px rgba(0,0,0,0.2);
+            z-index: 30;
+            margin-top: -8px; /* Đặt tâm viên bi ngay đường mực nước */
+        }
+
+        .reacting {
+            animation: fizz 0.05s infinite;
+        }
+
+        .beaker-water {
+            transition: background-color 2s ease;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            pointer-events: none;
+            animation: bubble-rise 0.8s forwards linear;
+        }
+
+        .smoke {
+            position: absolute;
+            background: rgba(240, 240, 240, 0.4);
+            border-radius: 50%;
+            filter: blur(4px);
+            pointer-events: none;
+            animation: bubble-rise 1.2s forwards ease-out;
+        }
+
+        /* Hiệu ứng gợn sóng lăn tăn dưới mẩu Na */
+        .ripple {
+            position: absolute;
+            border: 1px solid rgba(255,255,255,0.5);
+            border-radius: 50%;
+            animation: ripple-out 0.5s ease-out forwards;
+        }
+
+        @keyframes ripple-out {
+            from { transform: scale(0); opacity: 1; }
+            to { transform: scale(3); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex flex-col items-center justify-center p-4 font-sans">
+
+    <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-2xl border-t-8 border-blue-500">
+        <h1 class="text-3xl font-bold text-center text-blue-900 mb-2">Thí nghiệm Natri Tác dụng với Nước</h1>
+        <p class="text-center text-gray-500 mb-6 uppercase tracking-widest text-xs font-bold">Môi trường có chỉ thị Phenolphthalein</p>
+        
+        <div class="flex flex-col md:flex-row gap-8 items-center justify-center">
+            <!-- Khu vực thí nghiệm -->
+            <div class="relative w-64 h-80 border-b-4 border-l-4 border-r-4 border-gray-200 rounded-b-3xl bg-white overflow-hidden shadow-inner" id="beaker">
+                <!-- Nước -->
+                <div id="water" class="absolute bottom-0 w-full h-3/5 bg-blue-100/40 beaker-water border-t border-blue-200">
+                    <!-- Các hiệu ứng sẽ được thêm vào đây bằng JS -->
+                </div>
+                
+                <!-- Nhãn ống nghiệm -->
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 text-gray-400 font-mono text-xs pointer-events-none select-none">
+                    Cốc thủy tinh chịu nhiệt
+                </div>
+            </div>
+
+            <!-- Bảng điều khiển -->
+            <div class="flex flex-col gap-4 w-full md:w-64">
+                <div class="p-4 bg-purple-50 rounded-xl border border-purple-100 shadow-sm">
+                    <label class="block text-xs font-bold text-purple-700 uppercase mb-2">Bước 1: Chỉ thị</label>
+                    <button id="btn-pp" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all active:scale-95">
+                        Nhỏ Phenolphthalein
+                    </button>
+                </div>
+
+                <div class="p-4 bg-gray-100 rounded-xl border border-gray-200 shadow-sm">
+                    <label class="block text-xs font-bold text-gray-700 uppercase mb-2">Bước 2: Phản ứng</label>
+                    <button id="btn-na" class="w-full bg-gray-800 hover:bg-black text-white font-bold py-3 px-4 rounded-lg shadow-md transition-all active:scale-95">
+                        Thả Natri vào cốc
+                    </button>
+                </div>
+
+                <button id="btn-reset" class="mt-2 text-gray-400 hover:text-red-500 text-sm flex items-center justify-center gap-1 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                    Làm lại thí nghiệm
+                </button>
+            </div>
+        </div>
+
+        <!-- Giải thích hiện tượng -->
+        <div class="mt-8 p-5 bg-slate-50 rounded-xl border border-slate-200">
+            <h2 class="font-bold text-slate-800 border-b pb-2 mb-3">Hiện tượng & Phương trình:</h2>
+            <div class="flex justify-center my-4">
+                <span class="bg-white px-4 py-2 rounded-lg border border-slate-300 font-mono text-lg shadow-sm">
+                    2Na + 2H<sub>2</sub>O &rarr; 2NaOH + H<sub>2</sub>&uarr;
+                </span>
+            </div>
+            <div id="status-msg" class="text-sm text-slate-600 leading-relaxed min-h-[3rem] flex items-center bg-white p-3 rounded-lg border border-dashed border-slate-300">
+                Hãy bắt đầu bằng việc nhỏ Phenolphthalein vào nước.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const water = document.getElementById('water');
+        const btnPP = document.getElementById('btn-pp');
+        const btnNa = document.getElementById('btn-na');
+        const btnReset = document.getElementById('btn-reset');
+        const statusMsg = document.getElementById('status-msg');
+
+        let hasPP = false;
+        let isReacting = false;
+        let naCount = 0;
+
+        btnPP.onclick = () => {
+            if (hasPP) return;
+            hasPP = true;
+            statusMsg.innerHTML = "Đã nhỏ Phenolphthalein. Dung dịch vẫn <strong>không màu</strong> vì nước tinh khiết có môi trường trung tính.";
+            btnPP.disabled = true;
+            btnPP.classList.add('opacity-50', 'cursor-not-allowed', 'grayscale');
+            
+            // Hiệu ứng giọt rơi
+            createDrop();
+        };
+
+        btnNa.onclick = () => {
+            if (isReacting || naCount > 0) return;
+            startExperiment();
+        };
+
+        btnReset.onclick = () => {
+            location.reload();
+        };
+
+        function createDrop() {
+            const drop = document.createElement('div');
+            drop.className = `absolute top-[-20px] left-1/2 w-2 h-4 bg-purple-400 rounded-full z-50`;
+            document.getElementById('beaker').appendChild(drop);
+            
+            let pos = -20;
+            const fall = setInterval(() => {
+                pos += 8;
+                drop.style.top = pos + 'px';
+                if (pos > 110) { // Chạm mặt nước
+                    clearInterval(fall);
+                    drop.remove();
+                }
+            }, 20);
+        }
+
+        function startExperiment() {
+            isReacting = true;
+            naCount++;
+            btnNa.disabled = true;
+            btnNa.classList.add('opacity-50', 'cursor-not-allowed');
+            statusMsg.innerHTML = "<strong>Hiện tượng:</strong> Natri nóng chảy thành viên tròn màu bạc, nổi và chạy nhanh trên mặt nước.";
+
+            // Tạo viên Natri
+            const na = document.createElement('div');
+            na.className = 'sodium-ball reacting';
+            na.style.top = '0px'; // Chính xác trên mặt nước
+            na.style.left = '50%';
+            water.appendChild(na);
+
+            let reactionTime = 0;
+            const maxTime = 120; // Khoảng 12 giây
+            
+            const moveInterval = setInterval(() => {
+                reactionTime++;
+                
+                // Di chuyển ngẫu nhiên và mượt mà trên mặt nước (tạo cảm giác "chạy")
+                const currentLeft = parseFloat(na.style.left);
+                const drift = (Math.random() - 0.5) * 15; // Độ lệch ngẫu nhiên
+                let newLeft = currentLeft + drift;
+                
+                // Giới hạn trong thành cốc
+                if (newLeft < 5) newLeft = 10;
+                if (newLeft > 95) newLeft = 90;
+                
+                na.style.left = `${newLeft}%`;
+                na.style.transition = "left 0.15s ease-out";
+
+                // Tạo bọt khí Hydro thoát ra
+                createBubble(newLeft);
+                
+                // Tạo hiệu ứng gợn sóng lăn tăn
+                createRipple(newLeft);
+
+                // Nếu có PP, dung dịch chuyển dần sang màu hồng/tím
+                if (hasPP) {
+                    const intensity = Math.min(reactionTime / 60, 0.9);
+                    water.style.backgroundColor = `rgba(219, 39, 119, ${intensity})`;
+                } else {
+                    // Nếu không có PP, tạo vẩn đục nhẹ
+                    const intensity = Math.min(reactionTime / 120, 0.1);
+                    water.style.backgroundColor = `rgba(150, 150, 150, ${intensity})`;
+                }
+
+                if (reactionTime >= maxTime) {
+                    clearInterval(moveInterval);
+                    finishExperiment(na);
+                }
+            }, 100);
+        }
+
+        function createRipple(x) {
+            const r = document.createElement('div');
+            r.className = 'ripple';
+            r.style.left = x + '%';
+            r.style.top = '0px';
+            r.style.width = '10px';
+            r.style.height = '4px';
+            water.appendChild(r);
+            setTimeout(() => r.remove(), 500);
+        }
+
+        function createBubble(x) {
+            const b = document.createElement('div');
+            b.className = 'bubble';
+            const size = 2 + Math.random() * 6;
+            b.style.width = size + 'px';
+            b.style.height = size + 'px';
+            b.style.left = x + '%';
+            b.style.top = '2px';
+            water.appendChild(b);
+            setTimeout(() => b.remove(), 800);
+
+            // Tạo khói/hơi nước mờ
+            if (Math.random() > 0.6) {
+                const s = document.createElement('div');
+                s.className = 'smoke';
+                s.style.width = '15px';
+                s.style.height = '15px';
+                s.style.left = (x + (Math.random() * 4 - 2)) + '%';
+                s.style.top = '0px';
+                water.appendChild(s);
+                setTimeout(() => s.remove(), 1200);
+            }
+        }
+
+        function finishExperiment(naElement) {
+            // Hiệu ứng biến mất khi phản ứng hết
+            naElement.style.transform = "scale(0)";
+            naElement.style.transition = "transform 0.4s ease-in";
+            
+            setTimeout(() => {
+                naElement.remove();
+                isReacting = false;
+                statusMsg.innerHTML = `<strong>Kết quả:</strong> Natri đã phản ứng hết. Dung dịch chuyển sang <strong>màu hồng</strong> do tạo thành NaOH (môi trường bazơ). Khí thoát ra là H<sub>2</sub>.`;
+                
+                if (!hasPP) {
+                    btnPP.disabled = false;
+                    btnPP.classList.remove('opacity-50', 'cursor-not-allowed', 'grayscale');
+                    statusMsg.innerHTML = "<strong>Kết quả:</strong> Natri đã tan hết tạo thành NaOH. Hãy nhỏ thử Phenolphthalein ngay bây giờ để kiểm tra môi trường!";
+                }
+            }, 400);
+        }
+    </script>
+</body>
+</html>

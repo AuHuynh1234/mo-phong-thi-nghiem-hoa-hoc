@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Chuẩn độ Ca2+ bằng EDTA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        canvas {
+            display: block;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-6xl mx-auto space-y-6">
+        
+        <!-- Header -->
+        <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+            <h1 class="text-3xl font-bold text-indigo-700">Mô phỏng Chuẩn độ Complexon: Xác định Ca²⁺</h1>
+            <p class="text-slate-600 mt-2 leading-relaxed">
+                Quá trình chuẩn độ ion Canxi (Ca²⁺) bằng dung dịch chuẩn EDTA (Ethylenediaminetetraacetic acid). 
+                Môi trường phản ứng được duy trì ở <strong>pH > 12</strong> (bằng dung dịch NaOH) để kết tủa Mg²⁺ dạng Mg(OH)₂ nhằm loại trừ cản trở, đồng thời tạo môi trường cho chỉ thị <strong>Murexid</strong> hoạt động.
+            </p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            
+            <!-- Left Panel: Apparatus -->
+            <div class="lg:col-span-5 bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col items-center">
+                <h2 class="text-xl font-semibold mb-4 text-slate-800 w-full text-center">Bàn Chuẩn Độ</h2>
+                
+                <div class="relative w-full flex justify-center bg-slate-50 rounded-xl border border-slate-100 p-4">
+                    <canvas id="simCanvas" width="300" height="480"></canvas>
+                </div>
+
+                <!-- Controls -->
+                <div class="w-full mt-6 space-y-4">
+                    <div class="flex justify-center gap-3">
+                        <button id="btnDrip" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors shadow-sm w-32">
+                            Nhỏ giọt
+                        </button>
+                        <button id="btnStream" class="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium transition-colors shadow-sm w-32">
+                            Chảy nhanh
+                        </button>
+                        <button id="btnReset" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-medium transition-colors shadow-sm w-32">
+                            Làm lại
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Panel: Info & Graph -->
+            <div class="lg:col-span-7 space-y-6 flex flex-col">
+                
+                <!-- Status Board -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p class="text-sm text-slate-500 font-medium uppercase tracking-wide">Thể tích EDTA đã thêm</p>
+                        <p class="text-4xl font-bold text-blue-600 mt-1" id="volDisplay">0.00 <span class="text-xl text-slate-400">mL</span></p>
+                    </div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+                        <p class="text-sm text-slate-500 font-medium uppercase tracking-wide">Trạng thái dung dịch</p>
+                        <p class="text-xl font-semibold mt-2" id="statusDisplay">Trước tương đương</p>
+                        <div class="flex items-center gap-2 mt-2">
+                            <span class="text-sm text-slate-600">Màu sắc:</span>
+                            <div id="colorBadge" class="w-20 h-6 rounded border border-slate-300" style="background-color: rgba(255, 105, 180, 0.8);"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Graph -->
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex-grow flex flex-col">
+                    <h2 class="text-lg font-semibold text-slate-800 mb-4">Đường cong chuẩn độ (pCa - V<sub>EDTA</sub>)</h2>
+                    <div class="w-full flex-grow flex justify-center items-center min-h-[250px]">
+                        <canvas id="chartCanvas" width="450" height="280"></canvas>
+                    </div>
+                </div>
+
+                <!-- Theory Box -->
+                <div class="bg-indigo-50 p-6 rounded-2xl border border-indigo-100">
+                    <h3 class="font-bold text-indigo-800 mb-3 text-lg">Phản ứng Hóa học</h3>
+                    <div class="space-y-3 text-sm text-indigo-900">
+                        <p><strong>1. Trong bình nón ban đầu:</strong> Chỉ thị Murexid tạo phức với Ca²⁺ cho dung dịch màu hồng/đỏ cam.</p>
+                        <p class="font-mono bg-white bg-opacity-50 px-3 py-2 rounded">Ca²⁺ + Murexid ⇌ Phức [Ca-Murexid] (Màu hồng)</p>
+                        
+                        <p><strong>2. Quá trình chuẩn độ:</strong> EDTA (Y⁴⁻) phản ứng với ion Ca²⁺ tự do trong dung dịch.</p>
+                        <p class="font-mono bg-white bg-opacity-50 px-3 py-2 rounded">Ca²⁺ + Y⁴⁻ → CaY²⁻ (Phức bền, không màu)</p>
+
+                        <p><strong>3. Tại điểm tương đương:</strong> EDTA lấy phần Ca²⁺ cuối cùng từ phức [Ca-Murexid], giải phóng Murexid ở dạng tự do mang màu tím.</p>
+                        <p class="font-mono bg-white bg-opacity-50 px-3 py-2 rounded">[Ca-Murexid] + Y⁴⁻ → CaY²⁻ + Murexid (Màu tím hoa cà)</p>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Cấu hình Mô phỏng ---
+        const vEq = 20.0; // Thể tích điểm tương đương (mL)
+        const maxVol = 50.0; // Thể tích buret tối đa
+
+        // State variables
+        let volume = 0;
+        let mode = 'stop'; // 'stop', 'drip', 'stream'
+        let drops = [];
+        let lastTime = 0;
+
+        // Canvases
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const chartCanvas = document.getElementById('chartCanvas');
+        const chartCtx = chartCanvas.getContext('2d');
+
+        // UI Elements
+        const volDisplay = document.getElementById('volDisplay');
+        const statusDisplay = document.getElementById('statusDisplay');
+        const colorBadge = document.getElementById('colorBadge');
+        const btnDrip = document.getElementById('btnDrip');
+        const btnStream = document.getElementById('btnStream');
+
+        // Layout constants for Apparatus
+        const buretteX = 140;
+        const buretteWidth = 20;
+        const buretteTop = 30;
+        const buretteHeight = 220;
+        const flaskTop = 270;
+        const flaskBottom = 420;
+        const liquidBottom = 410;
+
+        // --- Logic & Chuyển đổi màu sắc ---
+        function getColor(v) {
+            // Hồng: rgb(255, 105, 180) -> Tím: rgb(148, 0, 211)
+            if (v < vEq - 0.3) return { r: 255, g: 105, b: 180, css: 'rgba(255, 105, 180, 0.85)' };
+            if (v > vEq + 0.3) return { r: 148, g: 0, b: 211, css: 'rgba(148, 0, 211, 0.85)' };
+            
+            // Nội suy màu trong khoảng bước nhảy
+            let t = (v - (vEq - 0.3)) / 0.6;
+            let r = Math.round(255 + (148 - 255) * t);
+            let g = Math.round(105 + (0 - 105) * t);
+            let b = Math.round(180 + (211 - 180) * t);
+            return { r, g, b, css: `rgba(${r}, ${g}, ${b}, 0.85)` };
+        }
+
+        // --- Render: Vẽ hệ thống dụng cụ ---
+        function drawApparatus() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. Giá đỡ (Stand)
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillRect(40, 430, 120, 12); // Base
+            ctx.fillRect(90, 20, 12, 410); // Rod
+            ctx.fillRect(90, 130, 50, 10); // Clamp
+
+            // 2. Chất lỏng trong Buret (EDTA)
+            let liquidHeight = (volume / maxVol) * buretteHeight;
+            ctx.fillStyle = 'rgba(226, 232, 240, 0.8)'; // Colorless EDTA
+            ctx.fillRect(buretteX + 2, buretteTop + liquidHeight, buretteWidth - 4, buretteHeight - liquidHeight);
+
+            // 3. Vỏ Buret
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(buretteX, buretteTop, buretteWidth, buretteHeight);
+            
+            // Vạch chia buret
+            ctx.fillStyle = '#64748b';
+            ctx.font = '10px Arial';
+            for(let i=0; i<=5; i++) {
+                let y = buretteTop + (i/5)*buretteHeight;
+                ctx.fillRect(buretteX, y, 6, 1);
+                if(i > 0 && i < 5) ctx.fillText((i*10), buretteX - 18, y + 4);
+            }
+
+            // Mũi Buret
+            ctx.beginPath();
+            ctx.moveTo(buretteX, buretteTop + buretteHeight);
+            ctx.lineTo(buretteX + 6, buretteTop + buretteHeight + 20);
+            ctx.lineTo(buretteX + 14, buretteTop + buretteHeight + 20);
+            ctx.lineTo(buretteX + buretteWidth, buretteTop + buretteHeight);
+            ctx.stroke();
+
+            // Khóa Buret
+            ctx.fillStyle = '#334155';
+            ctx.fillRect(buretteX - 8, buretteTop + buretteHeight + 5, 36, 6);
+
+            // 4. Giọt dung dịch đang rơi
+            ctx.fillStyle = '#94a3b8';
+            drops.forEach(drop => {
+                ctx.beginPath();
+                ctx.arc(drop.x, drop.y, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // 5. Dung dịch trong bình nón
+            const colorObj = getColor(volume);
+            ctx.fillStyle = colorObj.css;
+            
+            let flaskLiquidTop = liquidBottom - 30 - (volume / maxVol) * 15; // Mực nước dâng lên nhẹ
+
+            ctx.save();
+            // Tạo Clipping path theo hình bình nón Erlenmeyer
+            ctx.beginPath();
+            ctx.moveTo(135, flaskTop + 20); // Neck L
+            ctx.lineTo(135, flaskTop + 50); // Neck L btm
+            ctx.lineTo(80, flaskBottom);    // Base L
+            ctx.quadraticCurveTo(150, flaskBottom + 15, 220, flaskBottom); // Base curve
+            ctx.lineTo(165, flaskTop + 50); // Neck R btm
+            ctx.lineTo(165, flaskTop + 20); // Neck R
+            ctx.closePath();
+            ctx.clip(); // Apply clip
+
+            // Tô màu phần chất lỏng
+            ctx.fillRect(0, flaskLiquidTop, canvas.width, canvas.height);
+            ctx.restore();
+
+            // 6. Vỏ bình nón
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(135, flaskTop + 20); 
+            ctx.lineTo(135, flaskTop + 50); 
+            ctx.lineTo(80, flaskBottom);    
+            ctx.quadraticCurveTo(150, flaskBottom + 15, 220, flaskBottom); 
+            ctx.lineTo(165, flaskTop + 50); 
+            ctx.lineTo(165, flaskTop + 20); 
+            // Cổ bình
+            ctx.moveTo(130, flaskTop + 20);
+            ctx.lineTo(170, flaskTop + 20);
+            ctx.stroke();
+
+            // 7. Cá từ (Máy khuấy)
+            // Kích thước thay đổi liên tục tạo cảm giác đang quay
+            let stirrerWidth = 24 + Math.sin(Date.now() / 30) * 12;
+            ctx.fillStyle = '#ffffff';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.ellipse(150, flaskBottom + 5, stirrerWidth/2, 4, 0, 0, Math.PI*2);
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        // --- Render: Vẽ đồ thị pCa ---
+        function drawGraph() {
+            chartCtx.clearRect(0, 0, chartCanvas.width, chartCanvas.height);
+            
+            const pX = 50; // Padding X
+            const pY = 20; // Padding Y
+            const gW = chartCanvas.width - pX - 20;
+            const gH = chartCanvas.height - pY - 30;
+
+            // Hệ trục
+            chartCtx.strokeStyle = '#94a3b8';
+            chartCtx.lineWidth = 2;
+            chartCtx.beginPath();
+            chartCtx.moveTo(pX, pY);
+            chartCtx.lineTo(pX, pY + gH); // Trục Y (pCa)
+            chartCtx.lineTo(pX + gW, pY + gH); // Trục X (V)
+            chartCtx.stroke();
+
+            // Nhãn trục
+            chartCtx.fillStyle = '#475569';
+            chartCtx.font = '12px Inter';
+            chartCtx.fillText('pCa', pX - 30, pY + 10);
+            chartCtx.fillText('V EDTA (mL)', pX + gW - 60, pY + gH + 25);
+            
+            // Mark điểm tương đương (V = 20)
+            let eqX = pX + (vEq / maxVol) * gW;
+            chartCtx.strokeStyle = '#cbd5e1';
+            chartCtx.setLineDash([5, 5]);
+            chartCtx.beginPath();
+            chartCtx.moveTo(eqX, pY + gH);
+            chartCtx.lineTo(eqX, pY);
+            chartCtx.stroke();
+            chartCtx.setLineDash([]);
+            chartCtx.fillText('20', eqX - 8, pY + gH + 15);
+
+            // Hàm tính pCa giả lập đường cong chữ S
+            function getPCa(v) {
+                // pCa đi từ ~2 (khi chưa chuẩn độ) lên ~8 (sau tương đương)
+                return 2.5 + 5.5 / (1 + Math.exp(-1.5 * (v - vEq)));
+            }
+
+            // Vẽ đường chuẩn độ tới thời điểm hiện tại
+            chartCtx.strokeStyle = '#3b82f6'; // Blue-500
+            chartCtx.lineWidth = 3;
+            chartCtx.beginPath();
+            for (let v = 0; v <= volume; v += 0.5) {
+                let pCa = getPCa(v);
+                let x = pX + (v / maxVol) * gW;
+                let y = pY + gH - ((pCa - 2) / 7) * gH; // Map pCa 2->9 sang chiều cao
+                
+                if (v === 0) chartCtx.moveTo(x, y);
+                else chartCtx.lineTo(x, y);
+            }
+            chartCtx.stroke();
+
+            // Vẽ điểm chấm đỏ tại thể tích hiện tại
+            if (volume > 0) {
+                let currentPCa = getPCa(volume);
+                let currentX = pX + (volume / maxVol) * gW;
+                let currentY = pY + gH - ((currentPCa - 2) / 7) * gH;
+                
+                chartCtx.fillStyle = '#ef4444'; // Red-500
+                chartCtx.beginPath();
+                chartCtx.arc(currentX, currentY, 5, 0, Math.PI*2);
+                chartCtx.fill();
+                // Label giá trị
+                chartCtx.fillStyle = '#1e293b';
+                chartCtx.fillText(`(${volume.toFixed(1)}, ${currentPCa.toFixed(1)})`, currentX - 25, currentY - 10);
+            }
+        }
+
+        // --- Cập nhật giao diện ---
+        function updateUI() {
+            volDisplay.innerText = volume.toFixed(2);
+            
+            let status = "Trước tương đương";
+            let statusColor = "text-slate-600";
+            if (volume >= vEq - 0.3 && volume <= vEq + 0.3) {
+                status = "Điểm tương đương!";
+                statusColor = "text-purple-600";
+            } else if (volume > vEq + 0.3) {
+                status = "Sau tương đương (Dư EDTA)";
+                statusColor = "text-indigo-800";
+            }
+            statusDisplay.innerText = status;
+            statusDisplay.className = `text-xl font-bold mt-2 ${statusColor}`;
+            
+            colorBadge.style.backgroundColor = getColor(volume).css;
+
+            // Nút bấm
+            btnDrip.innerText = mode === 'drip' ? 'Tạm dừng' : 'Nhỏ giọt';
+            btnDrip.className = `px-5 py-2.5 text-white rounded-lg font-medium transition-colors shadow-sm w-32 ${mode === 'drip' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-blue-600 hover:bg-blue-700'}`;
+            
+            btnStream.innerText = mode === 'stream' ? 'Tạm dừng' : 'Chảy nhanh';
+            btnStream.className = `px-5 py-2.5 text-white rounded-lg font-medium transition-colors shadow-sm w-32 ${mode === 'stream' ? 'bg-amber-500 hover:bg-amber-600' : 'bg-indigo-600 hover:bg-indigo-700'}`;
+        }
+
+        // --- Vòng lặp Animation (Game Loop) ---
+        function loop(timestamp) {
+            if (!lastTime) lastTime = timestamp;
+            let dt = timestamp - lastTime;
+            lastTime = timestamp;
+
+            // Giới hạn max dt để tránh nhảy vọt nếu tab bị ẩn
+            if (dt > 100) dt = 16; 
+
+            // Logic tăng thể tích
+            if (mode === 'drip') {
+                volume += 0.015 * (dt / 16);
+                if (Math.random() < 0.04 * (dt / 16)) {
+                    drops.push({ x: buretteX + buretteWidth/2, y: buretteTop + buretteHeight + 20 });
+                }
+            } else if (mode === 'stream') {
+                volume += 0.08 * (dt / 16);
+                if (Math.random() < 0.3 * (dt / 16)) {
+                    drops.push({ x: buretteX + buretteWidth/2 + (Math.random()-0.5)*2, y: buretteTop + buretteHeight + 20 });
+                }
+            }
+
+            if (volume > maxVol) {
+                volume = maxVol;
+                mode = 'stop';
+                updateUI();
+            }
+
+            // Logic giọt rơi
+            let flaskLiquidTop = liquidBottom - 30 - (volume / maxVol) * 15;
+            for (let i = drops.length - 1; i >= 0; i--) {
+                drops[i].y += 6 * (dt / 16);
+                if (drops[i].y > flaskLiquidTop) {
+                    drops.splice(i, 1); // Biến mất khi chạm mặt nước
+                }
+            }
+
+            // Vẽ khung hình
+            drawApparatus();
+            drawGraph();
+            updateUI();
+
+            requestAnimationFrame(loop);
+        }
+
+        // --- Event Listeners ---
+        btnDrip.addEventListener('click', () => {
+            mode = mode === 'drip' ? 'stop' : 'drip';
+            updateUI();
+        });
+
+        btnStream.addEventListener('click', () => {
+            mode = mode === 'stream' ? 'stop' : 'stream';
+            updateUI();
+        });
+
+        document.getElementById('btnReset').addEventListener('click', () => {
+            mode = 'stop';
+            volume = 0;
+            drops = [];
+            updateUI();
+        });
+
+        // Bắt đầu vòng lặp
+        requestAnimationFrame(loop);
+
+    </script>
+</body>
+</html>
