@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô Phỏng Thí Nghiệm Mưa Vàng (PbI2) - Cải Tiến</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f4f6;
+        }
+        canvas {
+            background: linear-gradient(to bottom, #ffffff, #e5e7eb);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
+            border-radius: 8px;
+        }
+        .btn {
+            transition: all 0.2s ease;
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        .btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-5xl overflow-hidden flex flex-col md:flex-row">
+        
+        <!-- Cột Canvas (Bên trái) -->
+        <div class="p-6 bg-gray-50 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-200">
+            <div class="relative">
+                <canvas id="simCanvas" width="350" height="450" class="border border-gray-300"></canvas>
+                
+                <!-- Nhiệt kế hiển thị -->
+                <div class="absolute top-4 left-4 bg-white/80 px-3 py-1 rounded-full shadow border border-gray-200 text-sm font-semibold text-gray-700 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-500"><path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z"/><path d="M12 12v6"/></svg>
+                    <span id="tempDisplay">25°C</span>
+                </div>
+            </div>
+            <p class="text-sm text-gray-500 mt-3 text-center italic">Tinh thể PbI₂ sẽ lắng đọng và<br>xếp chồng lên nhau ở đáy bình.</p>
+        </div>
+
+        <!-- Cột Điều khiển & Giải thích (Bên phải) -->
+        <div class="p-8 flex-1 flex flex-col">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">Thí Nghiệm "Mưa Vàng"</h1>
+            <h2 class="text-lg font-medium text-blue-600 mb-4">Phản ứng: Pb²⁺ + 2I⁻ → PbI₂↓</h2>
+            
+            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 text-sm text-gray-700">
+                <p class="mb-2"><strong>Hiện tượng (Mô phỏng thực tế):</strong></p>
+                <ul class="list-decimal pl-4 space-y-1">
+                    <li><strong>Trộn:</strong> Hình thành ngay lập tức kết tủa tinh thể PbI₂ màu vàng. Do tốc độ kết tinh nhanh ở nhiệt độ phòng, các tinh thể rất nhỏ li ti làm dung dịch vẩn đục.</li>
+                    <li><strong>Đun nóng:</strong> Nhiệt độ tăng, kết tủa tan dần, dung dịch trở nên trong suốt.</li>
+                    <li><strong>Để nguội:</strong> Tinh thể hình vảy vàng óng ánh xuất hiện, rơi xuống (mưa vàng) và xếp chồng lên nhau dần đến nửa bình thì dừng lại.</li>
+                </ul>
+            </div>
+
+            <div class="flex-1">
+                <h3 class="font-semibold text-gray-800 mb-3">Các Bước Tiến Hành:</h3>
+                <div class="space-y-3">
+                    <button id="btnMix" class="btn w-full flex items-center justify-between px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg shadow font-medium">
+                        <span>1. Trộn dung dịch Pb(NO₃)₂ và KI</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 3v11.8a3 3 0 0 1-1.6 2.6L12 21l-5.4-3.6A3 3 0 0 1 5 14.8V3"/><path d="M5 8h14"/><path d="M5 13h14"/></svg>
+                    </button>
+                    
+                    <button id="btnHeat" disabled class="btn w-full flex items-center justify-between px-4 py-3 bg-red-500 hover:bg-red-600 text-white rounded-lg shadow font-medium">
+                        <span>2. Đun nóng hỗn hợp</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>
+                    </button>
+
+                    <button id="btnCool" disabled class="btn w-full flex items-center justify-between px-4 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg shadow font-medium">
+                        <span>3. Để nguội tạo Mưa Vàng</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19 9 10.5"/><path d="m19 17.5-8.5-8.5"/><path d="m22 13-9-9"/><path d="m14 16 3 3"/><path d="m9 21.5 3-3"/><path d="M3 10.5 11.5 2"/><path d="M2 14.5 10.5 6"/><path d="M10 16.5 18.5 8"/><path d="m3 3 8 8"/><path d="m7.5 21 8.5-8.5"/><path d="m2 22 8-8"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 pt-4 border-t border-gray-200">
+                <button id="btnReset" class="btn px-6 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded shadow font-medium flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+                    Làm lại thí nghiệm
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+        const tempDisplay = document.getElementById('tempDisplay');
+        
+        const btnMix = document.getElementById('btnMix');
+        const btnHeat = document.getElementById('btnHeat');
+        const btnCool = document.getElementById('btnCool');
+        const btnReset = document.getElementById('btnReset');
+
+        const CW = canvas.width;
+        const CH = canvas.height;
+
+        // Trạng thái: 0: Trống, 1: Kết tủa, 2: Đun, 3: Làm nguội
+        let state = 0; 
+        let temperature = 25;
+        let targetTemp = 25;
+        let particles = [];
+        let flameAlpha = 0;
+        let liquidColor = {r: 240, g: 245, b: 255, a: 0.3}; 
+
+        // Khai báo kích thước bình tam giác chuẩn
+        const flaskCenter = CW / 2;
+        const flaskTopY = 70;
+        const neckWidth = 44;
+        const neckBottomY = 150;
+        const flaskBottomY = 370;
+        const flaskBaseWidth = 200;
+        const liquidTopY = 200; // Mực nước
+
+        // Hàm tạo Path của bình (dùng để vẽ viền và clip chất lỏng)
+        function createFlaskPath() {
+            const p = new Path2D();
+            p.moveTo(flaskCenter - neckWidth/2, flaskTopY);
+            p.lineTo(flaskCenter - neckWidth/2, neckBottomY);
+            
+            // Cạnh nghiêng bên trái
+            p.lineTo(flaskCenter - flaskBaseWidth/2 + 10, flaskBottomY - 20);
+            
+            // Đáy bo tròn
+            p.quadraticCurveTo(flaskCenter - flaskBaseWidth/2, flaskBottomY, flaskCenter - flaskBaseWidth/4, flaskBottomY);
+            p.lineTo(flaskCenter + flaskBaseWidth/4, flaskBottomY);
+            p.quadraticCurveTo(flaskCenter + flaskBaseWidth/2, flaskBottomY, flaskCenter + flaskBaseWidth/2 - 10, flaskBottomY - 20);
+            
+            // Cạnh nghiêng bên phải
+            p.lineTo(flaskCenter + neckWidth/2, neckBottomY);
+            
+            // Lên miệng bình
+            p.lineTo(flaskCenter + neckWidth/2, flaskTopY);
+            p.closePath();
+            return p;
+        }
+
+        const flaskPath = createFlaskPath();
+
+        // Hàm tính toán vị trí rơi tối đa (Target Y) để tạo thành màng/bùn ở đáy
+        function getTargetPosition() {
+            // Random tọa độ X trong đáy bình
+            const minX = flaskCenter - flaskBaseWidth/2 + 15;
+            const maxX = flaskCenter + flaskBaseWidth/2 - 15;
+            const x = minX + Math.random() * (maxX - minX);
+            
+            // Tính độ cao của đống tinh thể: Cao ở giữa, thấp ở hai bên (dạng Parabol)
+            const distFromCenter = Math.abs(x - flaskCenter) / (flaskBaseWidth / 2);
+            // Chiều cao tối đa của lớp kết tủa (nửa bình ~ 85px)
+            const maxPileHeight = 85; 
+            const currentPileHeight = maxPileHeight * (1 - Math.pow(distFromCenter, 1.5));
+            
+            // Tọa độ Y đích
+            const y = flaskBottomY - 2 - Math.random() * currentPileHeight;
+            
+            return { x, y };
+        }
+
+        class Particle {
+            constructor(type, startY = null) {
+                this.type = type; // 'micro_crystal' (tinh thể li ti ban đầu) hoặc 'macro_crystal' (vảy vàng lớn)
+                
+                const target = getTargetPosition();
+                this.x = target.x;
+                this.targetY = target.y;
+                
+                // Xuất phát từ mặt nước hoặc ngẫu nhiên trong nước nếu mới trộn
+                this.y = startY !== null ? startY : (liquidTopY + Math.random() * (this.targetY - liquidTopY));
+                
+                this.size = type === 'micro_crystal' ? (Math.random() * 1.5 + 1) : (Math.random() * 3.5 + 2);
+                this.opacity = type === 'micro_crystal' ? 0.8 : 0; 
+                
+                this.angle = Math.random() * Math.PI * 2;
+                this.spinSpeed = (Math.random() - 0.5) * 0.15;
+                this.fallSpeed = type === 'micro_crystal' ? (Math.random() * 1 + 0.5) : (Math.random() * 1.5 + 0.5);
+                
+                this.settled = false; // Chạm đáy chưa?
+            }
+
+            update() {
+                // Đun nóng: Hạt tan dần
+                if (state === 2) {
+                    this.size -= 0.03;
+                    this.opacity -= 0.02;
+                    if (this.size < 0) this.size = 0;
+                }
+
+                // Rơi xuống
+                if (!this.settled && this.opacity > 0 && this.size > 0) {
+                    this.y += this.fallSpeed;
+                    
+                    if (this.type === 'macro_crystal') {
+                        this.angle += this.spinSpeed;
+                        this.x += Math.sin(this.y * 0.05) * 0.4; // Rơi zic zắc nhẹ
+                    }
+
+                    // Kiểm tra chạm lớp đích
+                    if (this.y >= this.targetY) {
+                        this.y = this.targetY;
+                        this.settled = true;
+                    }
+                }
+
+                // Tinh thể hiện rõ dần khi rơi
+                if (this.type === 'macro_crystal' && state === 3 && this.opacity < 1 && this.size > 0) {
+                    this.opacity += 0.02;
+                }
+            }
+
+            draw(ctx) {
+                if (this.opacity <= 0 || this.size <= 0) return;
+
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                if (this.type === 'micro_crystal') {
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillStyle = '#fde047'; 
+                    // Vẽ tinh thể nhỏ bé (dạng đa giác thay vì tròn để đúng bản chất tinh thể)
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i * Math.PI) / 3;
+                        const px = Math.cos(a) * this.size;
+                        const py = Math.sin(a) * this.size;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                } else if (this.type === 'macro_crystal') {
+                    const scaleY = this.settled ? 0.2 : Math.abs(Math.cos(this.angle)); 
+                    // Khi đã chạm đáy (settled), tinh thể nằm dẹp xuống (scaleY nhỏ)
+                    
+                    ctx.scale(1, scaleY);
+                    
+                    const brightness = Math.floor(scaleY * 50);
+                    ctx.fillStyle = `rgba(255, ${210 + brightness}, 0, ${this.opacity})`;
+                    
+                    ctx.beginPath();
+                    for (let i = 0; i < 6; i++) {
+                        const a = (i * Math.PI) / 3;
+                        const px = Math.cos(a) * this.size;
+                        const py = Math.sin(a) * this.size;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.closePath();
+                    ctx.fill();
+                    
+                    if (scaleY > 0.8 && !this.settled) {
+                        ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.stroke();
+                    }
+                }
+                
+                ctx.restore();
+            }
+        }
+
+        function drawFlame(ctx) {
+            if (flameAlpha <= 0) return;
+            
+            const time = Date.now() * 0.01;
+            ctx.save();
+            ctx.globalAlpha = flameAlpha;
+            ctx.translate(flaskCenter, flaskBottomY + 20);
+            
+            // Lửa ngoài
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(20 + Math.sin(time)*5, -20, 0, -45 - Math.random()*10);
+            ctx.quadraticCurveTo(-20 + Math.cos(time)*5, -20, 0, 0);
+            ctx.fillStyle = 'rgba(255, 100, 0, 0.6)';
+            ctx.fill();
+            
+            // Lửa trong
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.quadraticCurveTo(10, -10, 0, -25 - Math.random()*5);
+            ctx.quadraticCurveTo(-10, -10, 0, 0);
+            ctx.fillStyle = 'rgba(255, 200, 0, 0.8)';
+            ctx.fill();
+            
+            // Lửa xanh
+            ctx.beginPath();
+            ctx.arc(0, -5, 10, 0, Math.PI, true);
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.7)';
+            ctx.fill();
+            
+            // Chân đế
+            ctx.fillStyle = '#555';
+            ctx.fillRect(-20, 0, 40, 8);
+            ctx.fillRect(-15, 8, 30, 20);
+
+            ctx.restore();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, CW, CH);
+
+            // Xử lý nhiệt độ
+            if (temperature < targetTemp) temperature += 0.2;
+            if (temperature > targetTemp) temperature -= 0.2;
+            tempDisplay.innerText = `${Math.round(temperature)}°C`;
+            if(temperature > 60) tempDisplay.classList.replace('text-gray-700', 'text-red-600');
+            else tempDisplay.classList.replace('text-red-600', 'text-gray-700');
+
+            if (state === 2 && flameAlpha < 1) flameAlpha += 0.05;
+            if (state !== 2 && flameAlpha > 0) flameAlpha -= 0.05;
+
+            // Đổi màu nước
+            if (state === 1) { // Kết tủa li ti -> đục vàng
+                liquidColor.r += (250 - liquidColor.r) * 0.05;
+                liquidColor.g += (240 - liquidColor.g) * 0.05;
+                liquidColor.b += (150 - liquidColor.b) * 0.05;
+                liquidColor.a += (0.9 - liquidColor.a) * 0.05;
+            } else if (state === 2 || state === 3) { // Đun/Nguội -> Trong suốt lại
+                liquidColor.r += (240 - liquidColor.r) * 0.05;
+                liquidColor.g += (245 - liquidColor.g) * 0.05;
+                liquidColor.b += (255 - liquidColor.b) * 0.05;
+                liquidColor.a += (0.3 - liquidColor.a) * 0.05;
+            }
+
+            // --- VẼ CHẤT LỎNG VÀ HẠT BÊN TRONG (SỬ DỤNG CLIP) ---
+            ctx.save();
+            ctx.clip(flaskPath); // Cắt toàn bộ những gì vẽ ra sau lệnh này theo hình cái bình
+
+            // 1. Vẽ khối nước (Rect bao phủ toàn bộ phía dưới)
+            ctx.fillStyle = `rgba(${Math.round(liquidColor.r)}, ${Math.round(liquidColor.g)}, ${Math.round(liquidColor.b)}, ${liquidColor.a})`;
+            ctx.fillRect(0, liquidTopY, CW, CH);
+
+            // 2. Vẽ mặt nước (Ellipse)
+            const currentWidthAtWater = neckWidth + (flaskBaseWidth - neckWidth) * ((liquidTopY - neckBottomY)/(flaskBottomY - neckBottomY));
+            ctx.beginPath();
+            ctx.ellipse(flaskCenter, liquidTopY, currentWidthAtWater/2, 4, 0, 0, Math.PI*2);
+            ctx.fillStyle = `rgba(${Math.round(liquidColor.r)}, ${Math.round(liquidColor.g)}, ${Math.round(liquidColor.b)}, ${liquidColor.a + 0.2})`;
+            ctx.fill();
+
+            // Lọc bỏ hạt đã tan hết
+            particles = particles.filter(p => p.size > 0 && p.opacity > 0);
+            
+            // 3. Sinh tinh thể mưa vàng dần dần
+            if (state === 3 && temperature < 85 && particles.length < 1500) {
+                // Tạo vài hạt mỗi frame để giống mưa rơi
+                for(let i=0; i<3; i++) {
+                    particles.push(new Particle('macro_crystal', liquidTopY + 5));
+                }
+            }
+
+            // 4. Cập nhật và Vẽ hạt
+            // Vẽ hạt đã chạm đáy trước (để nằm dưới)
+            particles.forEach(p => { if(p.settled) p.draw(ctx); });
+            // Vẽ hạt đang rơi sau (để đè lên trên)
+            particles.forEach(p => { 
+                p.update();
+                if(!p.settled) p.draw(ctx); 
+            });
+
+            ctx.restore(); // Bỏ clip
+
+            // --- VẼ VỎ BÌNH THỦY TINH BÊN NGOÀI ---
+            ctx.save();
+            // Viền ngoài
+            ctx.strokeStyle = 'rgba(120, 130, 140, 0.6)';
+            ctx.lineWidth = 3;
+            ctx.stroke(flaskPath);
+            
+            // Hiệu ứng bóng thủy tinh
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
+            ctx.lineWidth = 2;
+            ctx.translate(-2, -1);
+            ctx.stroke(flaskPath);
+            
+            // Vẽ miệng bình (ellipse trên cùng)
+            ctx.beginPath();
+            ctx.ellipse(flaskCenter, flaskTopY, neckWidth/2, 6, 0, 0, Math.PI*2);
+            ctx.stroke();
+            ctx.restore();
+            
+            // Vạch chia độ
+            ctx.save();
+            ctx.strokeStyle = 'rgba(150, 160, 170, 0.8)';
+            ctx.lineWidth = 1;
+            ctx.font = '10px Arial';
+            ctx.fillStyle = 'rgba(150, 160, 170, 0.8)';
+            for(let i=0; i<3; i++) {
+                let y = 330 - i*40;
+                let x = flaskCenter - flaskBaseWidth/2 + 35 + i*10;
+                ctx.beginPath();
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + 10, y);
+                ctx.stroke();
+                ctx.fillText((50*(i+1)) + 'ml', x + 15, y + 3);
+            }
+            ctx.restore();
+
+            // Vẽ Lửa
+            drawFlame(ctx);
+
+            requestAnimationFrame(draw);
+        }
+
+        // Logic Nút bấm
+        btnMix.addEventListener('click', () => {
+            state = 1;
+            targetTemp = 25;
+            particles = [];
+            // Tạo tức thời các mầm tinh thể li ti
+            for(let i = 0; i < 1200; i++) {
+                particles.push(new Particle('micro_crystal'));
+            }
+            btnMix.disabled = true;
+            btnHeat.disabled = false;
+        });
+
+        btnHeat.addEventListener('click', () => {
+            state = 2;
+            targetTemp = 100; // Đun sôi
+            btnHeat.disabled = true;
+            
+            setTimeout(() => {
+                btnCool.disabled = false;
+            }, 3000);
+        });
+
+        btnCool.addEventListener('click', () => {
+            state = 3;
+            targetTemp = 20; // Trở về nhiệt độ phòng
+            btnCool.disabled = true;
+        });
+
+        btnReset.addEventListener('click', () => {
+            state = 0;
+            targetTemp = 25;
+            temperature = 25;
+            particles = [];
+            flameAlpha = 0;
+            liquidColor = {r: 240, g: 245, b: 255, a: 0.3};
+            
+            btnMix.disabled = false;
+            btnHeat.disabled = true;
+            btnCool.disabled = true;
+        });
+
+        // Khởi động
+        draw();
+
+    </script>
+</body>
+</html>
