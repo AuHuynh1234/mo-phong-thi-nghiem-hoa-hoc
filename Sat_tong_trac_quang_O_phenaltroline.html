@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Định lượng Sắt tổng</title>
+    <!-- Tích hợp Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Tích hợp thư viện Icon Lucide -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50 p-6 font-sans text-gray-800">
+    <div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden">
+        
+        <!-- Header -->
+        <header class="bg-blue-700 text-white p-6">
+            <h1 class="text-2xl font-bold flex items-center gap-2">
+                <i data-lucide="test-tube" class="w-8 h-8"></i>
+                Mô phỏng Định lượng Sắt tổng bằng O-phenanthroline
+            </h1>
+            <p class="mt-2 text-blue-100 opacity-90">Phương pháp trắc quang - Phân tích Hóa học</p>
+        </header>
+
+        <!-- Trình tự các bước -->
+        <div class="flex border-b border-gray-200 bg-gray-100 overflow-x-auto" id="tabs-container">
+            <!-- Tabs will be rendered here by JS -->
+        </div>
+
+        <!-- Nội dung chính -->
+        <div class="p-6 relative min-h-[500px]">
+            
+            <!-- BƯỚC 1: Chuẩn bị mẫu -->
+            <div id="step-1-content" class="space-y-6 fade-in hidden">
+                <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded text-blue-900">
+                    <h3 class="font-bold mb-1">Nguyên tắc:</h3>
+                    <p class="text-sm">Chuẩn bị dãy bình định mức 50mL. Hút chính xác thể tích dung dịch sắt chuẩn (10 ppm) vào các bình. <b>Thêm dung dịch acid sulfuric (H₂SO₄) vào các bình để tạo môi trường acid.</b> Hút mẫu nước cần phân tích vào bình "Mẫu thử".</p>
+                </div>
+                <div id="step-1-flasks" class="flex flex-wrap justify-center gap-6 py-8"></div>
+                <div class="flex justify-end">
+                    <button onclick="setStep(2)" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition">
+                        Tiếp theo: Thêm thuốc thử <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BƯỚC 2: Thêm thuốc thử -->
+            <div id="step-2-content" class="space-y-6 fade-in hidden">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                        <h3 class="font-bold text-gray-800 mb-4 flex items-center gap-2">
+                            <i data-lucide="droplets" class="w-5 h-5 text-blue-500"></i>
+                            Bảng điều khiển thêm hóa chất <span class="text-sm font-normal text-gray-500">(lần lượt nhấn vào từng hóa chất)</span>
+                        </h3>
+                        <div class="space-y-3">
+                            <button id="btn-reagent-hydroxylamine" onclick="handleAddReagent('hydroxylamine')" class="w-full text-left px-4 py-3 rounded-lg border transition flex justify-between items-center bg-white hover:bg-gray-50">
+                                <span>1. Thêm Hydroxylamine (NH₂OH)</span>
+                                <span id="badge-hydroxylamine" class="hidden text-xs bg-green-200 px-2 py-1 rounded">Đã thêm</span>
+                            </button>
+                            <p class="text-xs text-gray-500 ml-4 mb-2">Tác dụng: Khử toàn bộ Fe³⁺ trong mẫu thành Fe²⁺ (trong môi trường acid).</p>
+
+                            <button id="btn-reagent-buffer" onclick="handleAddReagent('buffer')" class="w-full text-left px-4 py-3 rounded-lg border transition flex justify-between items-center bg-white hover:bg-gray-50">
+                                <span>2. Thêm đệm Acetate (pH ~ 4.5)</span>
+                                <span id="badge-buffer" class="hidden text-xs bg-green-200 px-2 py-1 rounded">Đã thêm</span>
+                            </button>
+                            <p class="text-xs text-gray-500 ml-4 mb-2">Tác dụng: Duy trì pH tối ưu cho phản ứng tạo phức.</p>
+
+                            <button id="btn-reagent-phenanthroline" onclick="handleAddReagent('phenanthroline')" class="w-full text-left px-4 py-3 rounded-lg border transition flex justify-between items-center bg-white hover:bg-gray-50">
+                                <span>3. Thêm 1,10-phenanthroline</span>
+                                <span id="badge-phenanthroline" class="hidden text-xs bg-orange-200 text-orange-800 px-2 py-1 rounded">Đã phản ứng</span>
+                            </button>
+                            <p class="text-xs text-gray-500 ml-4 mb-2">Tác dụng: Tạo phức chất [Fe(Phen)₃]²⁺ có màu cam đỏ.</p>
+
+                            <button id="btn-reagent-water" onclick="handleAddReagent('water')" class="w-full text-left px-4 py-3 rounded-lg border transition flex justify-between items-center bg-white hover:bg-gray-50">
+                                <span>4. Thêm nước cất đến vạch (50mL)</span>
+                                <span id="badge-water" class="hidden text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded">Đã định mức</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col justify-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
+                        <div id="step-2-flasks" class="flex flex-wrap justify-center gap-4"></div>
+                        <div id="phen-message" class="hidden mt-6 text-center text-sm text-orange-600 font-medium animate-pulse">
+                            Phản ứng sinh màu đã xảy ra! Cường độ màu tỷ lệ với lượng sắt tổng
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-4">
+                    <button id="btn-next-step3" onclick="setStep(3)" class="bg-gray-300 text-gray-500 cursor-not-allowed px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition" disabled>
+                        Tiếp theo: Đo quang (510 nm) <i data-lucide="chevron-right" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BƯỚC 3: Đo quang -->
+            <div id="step-3-content" class="space-y-6 fade-in hidden">
+                <div class="flex flex-col md:flex-row gap-6">
+                    <!-- Máy quang phổ UI -->
+                    <div class="flex-1 bg-gray-800 rounded-xl p-6 shadow-inner text-white flex flex-col justify-between min-h-[300px]">
+                        <div>
+                            <div class="flex justify-between items-center mb-4 border-b border-gray-600 pb-2">
+                                <div class="font-mono text-gray-400">SPECTROPHOTOMETER V-200</div>
+                                <div class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-sm border border-red-500/30">
+                                    <span class="font-bold">λ</span> = 510 nm
+                                </div>
+                            </div>
+                            
+                            <div class="text-center mt-10">
+                                <div class="text-sm text-gray-400 mb-2">ĐỘ HẤP THỤ (ABS)</div>
+                                <div id="abs-display" class="text-6xl font-mono text-green-400 font-light tracking-wider bg-gray-900 py-6 rounded-lg shadow-inner border border-gray-700">
+                                    ---.---
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-8 text-center text-sm text-gray-500">
+                            Hãy nhấp vào từng bình bên dưới để đưa vào buồng đo
+                        </div>
+                    </div>
+
+                    <!-- Chọn bình -->
+                    <div class="flex-1 bg-white p-4 rounded-xl border border-gray-200 flex flex-wrap justify-center gap-4 content-start">
+                        <h3 class="w-full text-center font-bold text-gray-700 mb-2">Khay chứa mẫu</h3>
+                        <div id="step-3-flasks" class="w-full flex flex-wrap justify-center gap-4"></div>
+                        
+                        <div class="w-full mt-6 bg-blue-50 p-4 rounded-lg text-sm text-blue-800">
+                            <p class="font-semibold mb-1">Ghi chú đo lường:</p>
+                            <ul class="list-disc pl-5 space-y-1">
+                                <li>Đo mẫu trắng (Blank) trước để thiết lập điểm 0.</li>
+                                <li>Đo lần lượt các dung dịch chuẩn từ nồng độ thấp đến cao.</li>
+                                <li>Cuối cùng đo mẫu thử cần phân tích.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end mt-4">
+                    <button onclick="setStep(4)" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition">
+                        Phân tích Kết quả <i data-lucide="line-chart" class="w-4 h-4 ml-1"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- BƯỚC 4: Kết quả & Đường chuẩn -->
+            <div id="step-4-content" class="space-y-6 fade-in hidden">
+                <div class="grid md:grid-cols-2 gap-8">
+                    <!-- Bảng số liệu -->
+                    <div class="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 font-bold text-gray-700 flex justify-between items-center">
+                            <span>Bảng số liệu đo quang</span>
+                            <i data-lucide="activity" class="w-5 h-5 text-blue-500"></i>
+                        </div>
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="bg-gray-100 text-gray-700 uppercase">
+                                <tr>
+                                    <th class="px-4 py-3">Bình</th>
+                                    <th class="px-4 py-3">Nồng độ (ppm)</th>
+                                    <th class="px-4 py-3">Độ hấp thụ (A)</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table-body">
+                                <!-- Rendered by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Kết quả tính toán -->
+                    <div class="space-y-4">
+                        <div class="bg-white p-5 rounded-lg border border-gray-200 shadow-sm">
+                            <h3 class="font-bold text-gray-800 border-b pb-2 mb-4">Phương trình đường chuẩn</h3>
+                            <div class="space-y-2 font-mono text-sm bg-gray-50 p-4 rounded text-gray-700">
+                                <p>Hệ số góc (a): <span id="reg-slope" class="text-blue-600">0.0000</span></p>
+                                <p>Tung độ gốc (b): <span id="reg-intercept" class="text-blue-600">0.0000</span></p>
+                                <p>Hệ số tương quan (R²): <span id="reg-r2" class="text-green-600">0.0000</span></p>
+                                <div id="reg-equation" class="mt-4 pt-4 border-t border-gray-200 text-lg font-bold text-center text-gray-800">
+                                    y = ax + b
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-600 text-white p-5 rounded-lg shadow-md relative overflow-hidden">
+                            <div class="absolute top-0 right-0 p-4 opacity-20">
+                                <i data-lucide="flask-conical" class="w-16 h-16"></i>
+                            </div>
+                            <h3 class="font-bold text-xl mb-2 relative z-10">Kết quả Mẫu thử</h3>
+                            <div class="relative z-10">
+                                <p class="mb-1 text-blue-100">Độ hấp thụ đo được: <span id="unknown-abs" class="font-mono font-bold text-white">0.000</span></p>
+                                <p class="mb-4 text-blue-100">Áp dụng phương trình:</p>
+                                <div id="unknown-conc" class="text-3xl font-bold bg-white/20 p-3 rounded-lg text-center backdrop-blur-sm">
+                                    C = 0.00 ppm
+                                </div>
+                                <p class="mt-3 text-xs text-blue-200 text-center">Nồng độ sắt thực tế trong dung dịch đo</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-center mt-8">
+                    <button onclick="resetSimulation()" class="bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition">
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i> Làm lại thí nghiệm
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Script điều khiển -->
+    <script>
+        // Khởi tạo Icon
+        lucide.createIcons();
+
+        // Dữ liệu ban đầu
+        const initialFlasks = [
+            { id: 0, label: 'Mẫu Trắng', type: 'blank', feVol: 0, feConc: 0, colorAlpha: 0.02, abs: 0 },
+            { id: 1, label: 'Chuẩn 1', type: 'std', feVol: 1, feConc: 0.2, colorAlpha: 0.02, abs: 0 },
+            { id: 2, label: 'Chuẩn 2', type: 'std', feVol: 2, feConc: 0.4, colorAlpha: 0.02, abs: 0 },
+            { id: 3, label: 'Chuẩn 3', type: 'std', feVol: 3, feConc: 0.6, colorAlpha: 0.02, abs: 0 },
+            { id: 4, label: 'Chuẩn 4', type: 'std', feVol: 4, feConc: 0.8, colorAlpha: 0.02, abs: 0 },
+            { id: 5, label: 'Mẫu Thử', type: 'unknown', feVol: 'Vx', feConc: 0.5, colorAlpha: 0.02, abs: 0 },
+        ];
+
+        // Quản lý trạng thái (State)
+        let state = {
+            step: 1,
+            flasks: JSON.parse(JSON.stringify(initialFlasks)),
+            reagentsAdded: {
+                hydroxylamine: false,
+                buffer: false,
+                phenanthroline: false,
+                water: false
+            },
+            measuredId: null,
+            regression: { slope: 0, intercept: 0, r2: 0 }
+        };
+
+        const stepsNames = ['Chuẩn bị mẫu', 'Thêm thuốc thử', 'Đo quang', 'Kết quả & Tính toán'];
+
+        // --- Hàm logic phụ trợ ---
+        const addNoise = (value) => {
+            const noise = (Math.random() - 0.5) * 0.006;
+            return Math.max(0, value + noise);
+        };
+
+        function calculateAbsorbance() {
+            state.flasks = state.flasks.map(f => {
+                let trueAbs = f.feConc * 0.205;
+                if (f.id === 0) trueAbs = 0;
+                return { ...f, abs: addNoise(trueAbs) };
+            });
+        }
+
+        function calculateRegression() {
+            const stds = state.flasks.filter(f => f.type === 'std' || f.type === 'blank');
+            let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0, sumY2 = 0;
+            const n = stds.length;
+
+            stds.forEach(p => {
+                sumX += p.feConc;
+                sumY += p.abs;
+                sumXY += p.feConc * p.abs;
+                sumX2 += p.feConc * p.feConc;
+                sumY2 += p.abs * p.abs;
+            });
+
+            const denominator = (n * sumX2 - sumX * sumX);
+            const slope = (n * sumXY - sumX * sumY) / denominator;
+            const intercept = (sumY - slope * sumX) / n;
+            
+            const yMean = sumY / n;
+            let ssTot = 0, ssRes = 0;
+            stds.forEach(p => {
+                ssTot += Math.pow(p.abs - yMean, 2);
+                const predictedY = slope * p.feConc + intercept;
+                ssRes += Math.pow(p.abs - predictedY, 2);
+            });
+            const r2 = 1 - (ssRes / ssTot);
+
+            state.regression = { slope, intercept, r2 };
+        }
+
+        // --- Đồ họa SVG cho Bình định mức ---
+        function getFlaskGraphicHTML(flask, isActive = false, isInteractive = false) {
+            let liquidY = 145; // empty
+            if (state.step === 1) liquidY = 125; 
+            else if (state.step === 2) {
+                if (state.reagentsAdded.water) liquidY = 45; 
+                else if (state.reagentsAdded.phenanthroline) liquidY = 85;
+                else if (state.reagentsAdded.buffer) liquidY = 100;
+                else if (state.reagentsAdded.hydroxylamine) liquidY = 115;
+                else liquidY = 125;
+            } else {
+                liquidY = 45; 
+            }
+
+            const hasColor = state.step > 2 || (state.step === 2 && state.reagentsAdded.phenanthroline);
+            const color = hasColor ? `rgba(230, 70, 20, ${flask.colorAlpha})` : 'rgba(200, 220, 230, 0.4)';
+            const liquidTopColor = hasColor ? `rgba(180, 40, 10, ${flask.colorAlpha + 0.3})` : 'rgba(150, 180, 190, 0.6)';
+            
+            const flaskPath = "M 38 10 L 62 10 L 62 14 L 58 14 L 58 60 C 58 75, 85 85, 85 115 A 35 35 0 0 1 15 115 C 15 85, 42 75, 42 60 L 42 14 L 38 14 Z";
+            const clipId = `flask-clip-step${state.step}-${flask.id}`;
+            const glareId = `flask-glare-step${state.step}-${flask.id}`;
+
+            const activeClass = isActive ? 'bg-blue-100 ring-2 ring-blue-500' : 'hover:bg-gray-50';
+            const interactiveAttrs = isInteractive ? `onclick="measureFlask(${flask.id})" role="button" class="focus:outline-none"` : '';
+
+            let content = `
+                <div class="flex flex-col items-center p-2 rounded-lg transition-all cursor-pointer ${activeClass}">
+                    <svg width="70" height="110" viewBox="0 0 100 125" class="drop-shadow-sm overflow-visible">
+                        <defs>
+                            <clipPath id="${clipId}"><path d="${flaskPath}" /></clipPath>
+                            <linearGradient id="${glareId}" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="rgba(255,255,255,0.8)" />
+                                <stop offset="20%" stop-color="rgba(255,255,255,0.1)" />
+                                <stop offset="80%" stop-color="rgba(255,255,255,0.0)" />
+                                <stop offset="100%" stop-color="rgba(255,255,255,0.4)" />
+                            </linearGradient>
+                        </defs>
+                        <path d="${flaskPath}" fill="rgba(250, 252, 255, 0.5)" stroke="#94a3b8" stroke-width="2" />
+                        <g clip-path="url(#${clipId})">
+                            <rect x="0" y="${liquidY}" width="100" height="150" fill="${color}" style="transition: all 1s ease-in-out;" />
+                            <rect x="0" y="${liquidY}" width="100" height="3" fill="${liquidTopColor}" style="transition: all 1s ease-in-out;" />
+                        </g>
+                        <line x1="40" y1="45" x2="60" y2="45" stroke="#ef4444" stroke-width="1.5" />
+                        <text x="65" y="48" font-size="10" fill="#64748b" font-weight="bold">50mL</text>
+                        <path d="${flaskPath}" fill="url(#${glareId})" pointer-events="none" />
+                        <path d="M 38 14 C 50 16, 62 14, 62 14" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" pointer-events="none"/>
+                    </svg>
+                    <span class="mt-2 text-sm font-medium text-gray-700">${flask.label}</span>
+                </div>
+            `;
+
+            if(isInteractive) return `<button ${interactiveAttrs}>${content}</button>`;
+            
+            return `
+                <div class="text-center">
+                    ${content}
+                    ${state.step === 1 ? `<div class="mt-2 text-xs text-gray-500 bg-gray-100 p-1 rounded">Thêm ${flask.feVol} mL Fe<br/>+ H₂SO₄</div>` : ''}
+                </div>`;
+        }
+
+        // --- Cập nhật giao diện (Render) ---
+        function updateUI() {
+            // Update Tabs
+            let tabsHTML = '';
+            stepsNames.forEach((s, i) => {
+                const isActive = state.step === (i + 1);
+                const cls = isActive ? 'bg-white text-blue-700 border-b-2 border-blue-700' : 'text-gray-500';
+                tabsHTML += `<div class="flex-1 py-3 px-4 text-center font-semibold text-sm transition-colors ${cls}">Bước ${i + 1}: ${s}</div>`;
+            });
+            document.getElementById('tabs-container').innerHTML = tabsHTML;
+
+            // Hide all steps, show current
+            [1, 2, 3, 4].forEach(i => {
+                document.getElementById(`step-${i}-content`).classList.add('hidden');
+            });
+            document.getElementById(`step-${state.step}-content`).classList.remove('hidden');
+
+            // Render content based on step
+            if (state.step === 1) {
+                const html = state.flasks.map(f => getFlaskGraphicHTML(f, false, false)).join('');
+                document.getElementById('step-1-flasks').innerHTML = html;
+            } 
+            else if (state.step === 2) {
+                // Update buttons UI
+                const r = state.reagentsAdded;
+                updateReagentBtn('hydroxylamine', r.hydroxylamine, false, 'bg-green-50 border-green-200 text-green-700');
+                updateReagentBtn('buffer', r.buffer, !r.hydroxylamine, 'bg-green-50 border-green-200 text-green-700');
+                updateReagentBtn('phenanthroline', r.phenanthroline, !r.buffer, 'bg-orange-50 border-orange-200 text-orange-700');
+                updateReagentBtn('water', r.water, !r.phenanthroline, 'bg-blue-50 border-blue-200 text-blue-700');
+
+                document.getElementById('phen-message').classList.toggle('hidden', !r.phenanthroline);
+                
+                const nextBtn = document.getElementById('btn-next-step3');
+                if (r.water) {
+                    nextBtn.disabled = false;
+                    nextBtn.className = "bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition";
+                } else {
+                    nextBtn.disabled = true;
+                    nextBtn.className = "bg-gray-300 text-gray-500 cursor-not-allowed px-6 py-2 rounded-lg font-medium flex items-center gap-2 transition";
+                }
+
+                document.getElementById('step-2-flasks').innerHTML = state.flasks.map(f => getFlaskGraphicHTML(f, false, false)).join('');
+            } 
+            else if (state.step === 3) {
+                const html = state.flasks.map(f => getFlaskGraphicHTML(f, state.measuredId === f.id, true)).join('');
+                document.getElementById('step-3-flasks').innerHTML = html;
+
+                const absDisplay = document.getElementById('abs-display');
+                if (state.measuredId !== null) {
+                    absDisplay.innerText = state.flasks.find(f => f.id === state.measuredId).abs.toFixed(3);
+                } else {
+                    absDisplay.innerText = "---.---";
+                }
+            } 
+            else if (state.step === 4) {
+                // Render table
+                const tbody = state.flasks.map(f => `
+                    <tr class="${f.type === 'unknown' ? 'bg-orange-50 font-medium' : 'border-b'}">
+                        <td class="px-4 py-3">${f.label}</td>
+                        <td class="px-4 py-3">${f.type === 'unknown' ? '?' : f.feConc.toFixed(1)}</td>
+                        <td class="px-4 py-3 text-blue-600 font-mono">${f.abs.toFixed(3)}</td>
+                    </tr>
+                `).join('');
+                document.getElementById('results-table-body').innerHTML = tbody;
+
+                // Render regression
+                document.getElementById('reg-slope').innerText = state.regression.slope.toFixed(4);
+                document.getElementById('reg-intercept').innerText = state.regression.intercept.toFixed(4);
+                document.getElementById('reg-r2').innerText = state.regression.r2.toFixed(4);
+                document.getElementById('reg-equation').innerText = `y = ${state.regression.slope.toFixed(4)}x ${state.regression.intercept >= 0 ? '+' : '-'} ${Math.abs(state.regression.intercept).toFixed(4)}`;
+
+                // Unknown calc
+                const unknown = state.flasks.find(f => f.type === 'unknown');
+                const calculatedConc = (unknown.abs - state.regression.intercept) / state.regression.slope;
+                
+                document.getElementById('unknown-abs').innerText = unknown.abs.toFixed(3);
+                document.getElementById('unknown-conc').innerText = `C = ${calculatedConc.toFixed(2)} ppm`;
+            }
+        }
+
+        function updateReagentBtn(name, isAdded, isDisabled, addedClass) {
+            const btn = document.getElementById(`btn-reagent-${name}`);
+            const badge = document.getElementById(`badge-${name}`);
+            btn.disabled = isAdded || isDisabled;
+            
+            let baseClass = "w-full text-left px-4 py-3 rounded-lg border transition flex justify-between items-center";
+            if (isAdded) {
+                btn.className = `${baseClass} ${addedClass}`;
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+                if (isDisabled) btn.className = `${baseClass} bg-white hover:bg-gray-50 opacity-50 cursor-not-allowed`;
+                else btn.className = `${baseClass} bg-white hover:bg-gray-50`;
+            }
+        }
+
+        // --- Các hàm thao tác của User ---
+        window.setStep = function(newStep) {
+            state.step = newStep;
+            if (newStep === 3) calculateAbsorbance();
+            if (newStep === 4) calculateRegression();
+            updateUI();
+        };
+
+        window.handleAddReagent = function(reagent) {
+            state.reagentsAdded[reagent] = true;
+            if (reagent === 'phenanthroline') {
+                state.flasks = state.flasks.map(f => ({
+                    ...f,
+                    colorAlpha: f.feConc * 1.0 + 0.05
+                }));
+            }
+            updateUI();
+        };
+
+        window.measureFlask = function(id) {
+            state.measuredId = id;
+            updateUI();
+        };
+
+        window.resetSimulation = function() {
+            state.step = 1;
+            state.flasks = JSON.parse(JSON.stringify(initialFlasks));
+            state.reagentsAdded = { hydroxylamine: false, buffer: false, phenanthroline: false, water: false };
+            state.measuredId = null;
+            updateUI();
+        };
+
+        // Khởi chạy lần đầu
+        updateUI();
+
+    </script>
+</body>
+</html>
