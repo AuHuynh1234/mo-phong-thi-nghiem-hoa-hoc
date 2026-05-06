@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Chuẩn độ NaOH và Na₂CO₃</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Animation cho giọt nước rơi */
+        @keyframes drop-fall {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            50% { transform: translateY(30px) scale(1); opacity: 1; }
+            100% { transform: translateY(60px) scale(0.5); opacity: 0; }
+        }
+        .animate-drop {
+            animation: drop-fall 0.25s infinite linear;
+        }
+        
+        /* Animation cho cá từ (Stir bar) */
+        @keyframes spin-flat-anim {
+            0% { transform: scaleX(1); }
+            50% { transform: transform: scaleX(0.2); }
+            100% { transform: scaleX(1); }
+        }
+        .spin-flat {
+            animation: spin-flat-anim 0.15s infinite linear;
+            transform-origin: 50px 125px;
+        }
+        
+        /* Custom scrollbar cho khung log */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9; 
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1; 
+            border-radius: 4px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8; 
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- Header -->
+    <header class="bg-blue-700 text-white p-4 shadow-md z-10 relative">
+        <h1 class="text-2xl font-bold text-center">Mô Phỏng Phân Tích Sút Kỹ Thuật (NaOH & Na₂CO₃)</h1>
+        <p class="text-center text-blue-100 text-sm mt-1">Chuẩn độ bằng dung dịch HCl 0.1N - Phương pháp Warder</p>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 flex flex-col md:flex-row p-4 gap-6 overflow-hidden">
+        
+        <!-- Cột Trái: Giao diện phòng thí nghiệm (Mô phỏng vật lý) -->
+        <div class="w-full md:w-1/2 lg:w-5/12 bg-white rounded-xl shadow-lg border border-slate-200 p-2 flex flex-col justify-center relative overflow-hidden h-full min-h-[550px]">
+            
+            <div class="relative w-full h-[550px] max-w-[320px] mx-auto">
+                <!-- 1. Giá đỡ (Stand) -->
+                <!-- Đế -->
+                <div class="absolute bottom-[40px] left-[20px] w-[200px] h-[16px] bg-slate-800 rounded-t-md shadow-md border-b-4 border-slate-900"></div>
+                <!-- Cột dọc -->
+                <div class="absolute bottom-[40px] left-[50px] w-[14px] h-[480px] bg-gradient-to-r from-slate-400 via-slate-200 to-slate-500 shadow-sm border border-slate-400 rounded-t-sm"></div>
+                <!-- Kẹp (Clamp) -->
+                <div class="absolute top-[140px] left-[64px] w-[70px] h-[14px] bg-slate-600 rounded-r-md border-y border-r border-slate-700"></div>
+
+                <!-- 2. Buret -->
+                <!-- Container buret để canh giữa chính xác -->
+                <div class="absolute top-[0px] left-[114px] w-[40px] flex flex-col items-center">
+                    
+                    <!-- Ống thủy tinh Buret -->
+                    <div class="w-[24px] h-[340px] bg-white border-x-2 border-slate-300 shadow-inner relative overflow-hidden rounded-t-md">
+                        <!-- Chất lỏng HCl -->
+                        <!-- Chiều cao của div này sẽ giảm dần khi thể tích tăng -->
+                        <div id="hcl-liquid" class="absolute bottom-0 left-0 w-full bg-cyan-100/60 transition-all duration-100" style="height: 100%;"></div>
+                        
+                        <!-- Vạch chia độ (mô phỏng vài vạch tượng trưng) -->
+                        <div class="absolute inset-0 flex flex-col justify-between py-4 px-0.5 pointer-events-none opacity-40 text-[7px] text-slate-800 font-mono">
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">0</span></div>
+                            <div class="border-t border-slate-800 w-2 ml-0.5"></div>
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">5</span></div>
+                            <div class="border-t border-slate-800 w-2 ml-0.5"></div>
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">10</span></div>
+                            <div class="border-t border-slate-800 w-2 ml-0.5"></div>
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">15</span></div>
+                            <div class="border-t border-slate-800 w-2 ml-0.5"></div>
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">20</span></div>
+                            <div class="border-t border-slate-800 w-2 ml-0.5"></div>
+                            <div class="border-t border-slate-800 w-3 ml-0.5"><span class="ml-3">25</span></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Khóa vòi (Stopcock) -->
+                    <div class="relative w-[32px] h-[24px] bg-slate-200 border border-slate-300 mt-[2px] flex justify-center items-center rounded-sm">
+                        <!-- Nút vặn màu đỏ -->
+                        <div id="valve-handle" class="w-[44px] h-[10px] bg-red-600 rounded-full shadow-md transition-transform duration-200 z-10 cursor-pointer"></div>
+                    </div>
+                    
+                    <!-- Đầu tip nhỏ giọt -->
+                    <div class="w-[8px] h-[30px] border-x-2 border-slate-300 bg-white/50 mt-[2px] rounded-b-sm relative">
+                        <!-- Giọt nước -->
+                        <div id="drop-animation" class="absolute -bottom-[2px] left-[0.5px] w-[5px] h-[8px] bg-cyan-200 rounded-full hidden"></div>
+                    </div>
+                </div>
+
+                <!-- Nhãn HCl 0.1 N (Cách buret 1 tí) -->
+                <div class="absolute top-[150px] left-[165px] bg-cyan-50 border border-cyan-300 px-2 py-1 rounded shadow-sm z-10">
+                    <!-- Đường kẻ chỉ vào buret -->
+                    <div class="absolute -left-4 top-1/2 w-4 h-[1px] bg-cyan-400"></div>
+                    <span class="text-xs font-bold text-cyan-900">HCl 0,1 N</span>
+                </div>
+
+                <!-- 3. Bình Erlenmeyer (SVG) -->
+                <!-- Tâm bình Erlen được canh chính xác vào tâm của Buret (left: 114px + 20px = 134px. Tâm Erlen: 84px + 50px = 134px) -->
+                <div class="absolute bottom-[40px] left-[84px] w-[100px]">
+                    <svg width="100" height="130" viewBox="0 0 100 130" class="overflow-visible filter drop-shadow-md">
+                        <defs>
+                            <!-- Mặt nạ cắt phần chất lỏng theo hình dáng bình -->
+                            <clipPath id="flask-clip">
+                                <path d="M 40 10 L 60 10 L 60 45 L 95 120 A 6 6 0 0 1 90 128 L 10 128 A 6 6 0 0 1 5 120 L 40 45 Z" />
+                            </clipPath>
+                        </defs>
+                        
+                        <!-- Viền thủy tinh nền sau -->
+                        <path d="M 40 10 L 60 10 L 60 45 L 95 120 A 6 6 0 0 1 90 128 L 10 128 A 6 6 0 0 1 5 120 L 40 45 Z" fill="rgba(248, 250, 252, 0.6)" stroke="#94a3b8" stroke-width="2" stroke-linejoin="round" />
+                        
+                        <!-- Chất lỏng bên trong (Sẽ thay đổi chiều cao (y) và màu sắc (fill)) -->
+                        <rect id="flask-liquid-rect" x="0" y="90" width="100" height="40" fill="transparent" clip-path="url(#flask-clip)" class="transition-colors duration-500" />
+                        
+                        <!-- Hiệu ứng bóng phản quang mặt kính trước -->
+                        <path d="M 43 15 L 43 42 L 23 105" stroke="rgba(255,255,255,0.9)" stroke-width="3" fill="none" stroke-linecap="round" />
+                        <path d="M 57 15 L 57 42 L 77 105" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" fill="none" stroke-linecap="round" />
+                        
+                        <!-- Cá từ (Stir bar) -->
+                        <rect id="stir-bar" x="40" y="122" width="20" height="6" rx="3" fill="#e2e8f0" stroke="#94a3b8" stroke-width="1" />
+                        
+                        <!-- Mức thể tích ghi trên bình -->
+                        <text x="70" y="80" font-size="8" fill="#64748b" font-family="sans-serif" font-weight="bold" transform="rotate(-65 70 80)">250 ml</text>
+                    </svg>
+                </div>
+
+                <!-- Chú thích nhanh -->
+                <div class="absolute bottom-4 right-4 text-xs font-mono text-slate-500 bg-white/80 px-2 py-1 border border-slate-200 rounded">
+                    Bình chứa mẫu: <br> NaOH + Na₂CO₃
+                </div>
+            </div>
+        </div>
+
+        <!-- Cột Phải: Bảng điều khiển & Kết quả -->
+        <div class="w-full md:w-1/2 lg:w-7/12 flex flex-col gap-4 h-full overflow-hidden">
+            
+            <!-- Khung Điều khiển -->
+            <div class="bg-white rounded-xl shadow-lg border border-slate-200 p-5 shrink-0">
+                <h2 class="text-xl font-bold border-b border-slate-200 pb-2 mb-4 text-slate-800">Bảng Điều Khiển</h2>
+                
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded border border-blue-200 mb-4 shadow-inner">
+                    <span class="font-medium text-slate-700">Thể tích HCl đã nhỏ:</span>
+                    <span id="volume-display" class="text-3xl font-mono font-bold text-blue-700">0.00 mL</span>
+                </div>
+                
+                <!-- Hộp hướng dẫn (Không có hiệu ứng màu mè) -->
+                <div id="instruction-box" class="p-3 bg-slate-100 border border-slate-300 rounded text-slate-800 font-medium text-center shadow-sm mb-4">
+                    Bước 1: Nhấn "Thêm 3 giọt PP" để chuẩn bị Giai đoạn 1.
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <button id="btn-add-pp" class="bg-pink-500 hover:bg-pink-600 text-white font-bold py-2.5 px-4 rounded shadow-sm transition-colors">
+                        Thêm 3 giọt PP
+                    </button>
+                    <button id="btn-add-mo" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2.5 px-4 rounded shadow-sm transition-colors">
+                        Thêm 3 giọt MO
+                    </button>
+                    <button id="btn-titrate" class="col-span-2 bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded shadow-sm transition-colors flex justify-center items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path></svg>
+                        <span id="titrate-btn-text">Mở khóa Buret (Nhỏ giọt)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Khung Nhật ký và Kết quả -->
+            <div class="flex-1 bg-white rounded-xl shadow-lg border border-slate-200 flex flex-col overflow-hidden">
+                
+                <!-- Tab Kết quả (Ẩn đi lúc đầu) -->
+                <div id="results-section" class="hidden bg-green-50 border-b border-green-200 p-4 shrink-0">
+                    <h3 class="font-bold text-green-800 text-lg mb-2">Kết quả định lượng</h3>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                        <div class="flex justify-between col-span-2 border-b border-green-200 pb-1">
+                            <span class="text-slate-700">Thể tích V<sub>1</sub> (PP):</span>
+                            <span class="font-mono font-bold text-slate-800" id="res-v1">-- mL</span>
+                        </div>
+                        <div class="flex justify-between col-span-2 border-b border-green-200 pb-1 mb-2">
+                            <span class="text-slate-700">Tổng thể tích V<sub>2</sub> (MO):</span>
+                            <span class="font-mono font-bold text-slate-800" id="res-v2">-- mL</span>
+                        </div>
+                        
+                        <div class="bg-white p-2 rounded border border-green-200">
+                            <div class="font-semibold text-blue-800 mb-1">Tính V(HCl) ⇌ NaOH:</div>
+                            <div class="font-mono text-xs text-slate-500 mb-1">V<sub>NaOH</sub> = 2 × V<sub>1</sub> - V<sub>2</sub></div>
+                            <div class="font-mono font-bold text-blue-700 pb-1 border-b border-slate-100" id="res-v-naoh-calc"></div>
+                            <div class="font-mono text-[10px] text-slate-500 mt-1">%NaOH = (V<sub>NaOH</sub> × 0.1 × 40) / (1000 × m) × 100%</div>
+                            <div class="font-mono font-bold text-blue-700 text-sm mt-0.5" id="res-pct-naoh"></div>
+                        </div>
+                        
+                        <div class="bg-white p-2 rounded border border-green-200">
+                            <div class="font-semibold text-purple-800 mb-1">Tính V(HCl) ⇌ Na₂CO₃:</div>
+                            <div class="font-mono text-xs text-slate-500 mb-1">V<sub>Na₂CO₃</sub> = 2 × (V<sub>2</sub> - V<sub>1</sub>)</div>
+                            <div class="font-mono font-bold text-purple-700 pb-1 border-b border-slate-100" id="res-v-na2co3-calc"></div>
+                            <div class="font-mono text-[10px] text-slate-500 mt-1">%Na₂CO₃ = (V<sub>Na₂CO₃</sub> × 0.1 × 53) / (1000 × m) × 100%</div>
+                            <div class="font-mono font-bold text-purple-700 text-sm mt-0.5" id="res-pct-na2co3"></div>
+                        </div>
+
+                        <div class="col-span-2 text-xs text-slate-500 font-mono bg-white p-2 rounded border border-slate-200 mt-1">
+                            * Giả định: Nồng độ HCl = 0.1 N, Khối lượng mẫu m = 0.0800 g
+                        </div>
+                    </div>
+                    <button id="btn-reset" class="mt-3 w-full bg-slate-700 hover:bg-slate-800 text-white py-2 rounded shadow-sm transition-colors text-sm font-bold">Thực hiện lại với Mẫu mới</button>
+                </div>
+
+                <!-- Khung Log -->
+                <div class="p-4 flex-1 overflow-y-auto custom-scroll bg-slate-50">
+                    <h3 class="font-bold text-slate-700 mb-2 flex items-center gap-2">
+                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Nhật ký thao tác:
+                    </h3>
+                    <ul id="status-log" class="text-sm space-y-2 text-slate-600 font-mono">
+                        <li><span class="text-blue-600 font-bold">[Hệ thống]</span> Đã nạp mẫu thử vào bình nón. Vui lòng thêm chỉ thị Phenolphtalein (PP).</li>
+                    </ul>
+                </div>
+            </div>
+            
+        </div>
+    </main>
+
+    <script>
+        // --- STATE MANAGEMENT ---
+        let state = {
+            volume: 0,
+            v1_target: 0,
+            v2_target: 0,
+            v1_recorded: 0,
+            v2_recorded: 0,
+            phase: 0, // 0: Init, 1: PP added, 2: V1 reached, 3: MO added, 4: Done
+            isTitrating: false,
+            titrationInterval: null
+        };
+
+        // --- DOM ELEMENTS ---
+        const ui = {
+            volDisplay: document.getElementById('volume-display'),
+            btnPP: document.getElementById('btn-add-pp'),
+            btnMO: document.getElementById('btn-add-mo'),
+            btnTitrate: document.getElementById('btn-titrate'),
+            btnReset: document.getElementById('btn-reset'),
+            statusLog: document.getElementById('status-log'),
+            instructionBox: document.getElementById('instruction-box'),
+            
+            // Elements for Physics Visuals
+            flaskLiquidRect: document.getElementById('flask-liquid-rect'),
+            hclLiquid: document.getElementById('hcl-liquid'),
+            dropAnim: document.getElementById('drop-animation'),
+            valveHandle: document.getElementById('valve-handle'),
+            
+            // Elements for Results
+            resultsSec: document.getElementById('results-section'),
+            resV1: document.getElementById('res-v1'),
+            resV2: document.getElementById('res-v2'),
+            resVNaohCalc: document.getElementById('res-v-naoh-calc'),
+            resVNa2co3Calc: document.getElementById('res-v-na2co3-calc'),
+            resPctNaoh: document.getElementById('res-pct-naoh'),
+            resPctNa2co3: document.getElementById('res-pct-na2co3'),
+            btnTitrateText: document.getElementById('titrate-btn-text'),
+            stirBar: document.getElementById('stir-bar')
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        function logStatus(msg, type='info') {
+            const li = document.createElement('li');
+            li.className = 'border-b border-slate-200 pb-1 border-dashed';
+            let prefix = '<span class="text-blue-600 font-bold">[Hệ thống]</span>';
+            if (type === 'action') prefix = '<span class="text-green-600 font-bold">[Thao tác]</span>';
+            if (type === 'alert') prefix = '<span class="text-red-500 font-bold">[Quan sát]</span>';
+            
+            li.innerHTML = `${prefix} ${msg}`;
+            ui.statusLog.appendChild(li);
+            ui.statusLog.scrollTop = ui.statusLog.scrollHeight;
+        }
+
+        function updateGuidance() {
+            switch(state.phase) {
+                case 0:
+                    ui.instructionBox.innerHTML = 'Bước 1: Nhấn "Thêm 3 giọt PP" để bắt đầu.';
+                    break;
+                case 1:
+                    ui.instructionBox.innerHTML = state.isTitrating 
+                        ? 'Đang nhỏ giọt... Quan sát sự đổi màu của dung dịch.' 
+                        : 'Bước 2: Mở khóa Buret để chuẩn độ đến khi mất màu hồng.';
+                    break;
+                case 2:
+                    ui.instructionBox.innerHTML = 'Bước 3: Ghi nhận V<sub>1</sub>. Nhấn "Thêm 3 giọt MO" để tiếp tục.';
+                    break;
+                case 3:
+                    ui.instructionBox.innerHTML = state.isTitrating 
+                        ? 'Đang nhỏ giọt... Quan sát sự đổi màu từ Vàng sang Cam.' 
+                        : 'Bước 4: Mở khóa Buret chuẩn độ tiếp đến khi dung dịch hóa cam.';
+                    break;
+                case 4:
+                    ui.instructionBox.innerHTML = 'Hoàn tất! Bảng kết quả đã được hiển thị.';
+                    break;
+            }
+        }
+
+        function generateSample() {
+            // Randomize accurate typical titration volumes (Điều chỉnh lại cho thực tế hơn với m = 0.08g)
+            const v_naoh_true = 14 + Math.random() * 4; // 14-18 mL
+            const v_na2co3_true = 2 + Math.random() * 2; // 2-4 mL
+            
+            state.v1_target = parseFloat((v_naoh_true + v_na2co3_true / 2).toFixed(2));
+            state.v2_target = parseFloat((state.v1_target + v_na2co3_true / 2).toFixed(2));
+            
+            state.volume = 0;
+            state.v1_recorded = 0;
+            state.v2_recorded = 0;
+            state.phase = 0;
+            state.isTitrating = false;
+            
+            updateVisuals();
+            updateGuidance();
+        }
+
+        function updateVisuals() {
+            // Update Text Display
+            ui.volDisplay.innerText = state.volume.toFixed(2) + " mL";
+            
+            // 1. Update Buret Liquid (Mức nước HCl trong buret tụt xuống)
+            // Volume max là 25mL -> phần trăm còn lại trong ống
+            const hclPercent = Math.max(0, 100 - (state.volume / 25) * 100);
+            ui.hclLiquid.style.height = `${hclPercent}%`;
+
+            // 2. Update Flask Liquid (Mức nước trong bình Erlen dâng lên)
+            // Tọa độ y của hình chữ nhật: 90 là mức ban đầu, 70 là mức dâng thêm tối đa
+            const baseLevelY = 90;
+            const currentLevelY = baseLevelY - (state.volume / 25) * 20; 
+            ui.flaskLiquidRect.setAttribute('y', currentLevelY);
+            ui.flaskLiquidRect.setAttribute('height', 130 - currentLevelY);
+
+            // 3. Update Colors based on Phase
+            if (state.phase === 1) {
+                ui.flaskLiquidRect.setAttribute('fill', 'rgba(255, 105, 180, 0.6)'); // Hồng PP
+            } else if (state.phase === 2) {
+                ui.flaskLiquidRect.setAttribute('fill', 'rgba(240, 240, 240, 0.4)'); // Không màu
+            } else if (state.phase === 3) {
+                ui.flaskLiquidRect.setAttribute('fill', 'rgba(255, 215, 0, 0.6)'); // Vàng MO
+            } else if (state.phase === 4) {
+                ui.flaskLiquidRect.setAttribute('fill', 'rgba(255, 120, 0, 0.7)'); // Cam (Điểm dừng)
+            } else {
+                ui.flaskLiquidRect.setAttribute('fill', 'transparent'); // Mặc định
+            }
+        }
+
+        function startTitration() {
+            state.isTitrating = true;
+            
+            // Xoay khóa buret 90 độ
+            ui.valveHandle.style.transform = "rotate(90deg)";
+            
+            // Bật cá từ quay
+            ui.stirBar.classList.add('spin-flat');
+            
+            // Hiển thị hiệu ứng giọt nước
+            ui.dropAnim.classList.remove('hidden');
+            ui.dropAnim.classList.add('animate-drop');
+            
+            // Đổi giao diện nút
+            ui.btnTitrate.classList.replace('bg-green-600', 'bg-red-600');
+            ui.btnTitrate.classList.replace('hover:bg-green-700', 'hover:bg-red-700');
+            ui.btnTitrateText.innerText = "Khóa Buret (Dừng)";
+            
+            logStatus("Đã mở khóa Buret, HCl bắt đầu nhỏ giọt...", "action");
+            updateGuidance();
+
+            // Interval tăng thể tích
+            state.titrationInterval = setInterval(() => {
+                state.volume += 0.05; 
+                
+                // Safety lock
+                if (state.volume >= 30) {
+                    stopTitration();
+                    return;
+                }
+
+                // Kiểm tra chạm mốc điểm tương đương
+                if (state.phase === 1 && state.volume >= state.v1_target) {
+                    state.volume = state.v1_target;
+                    reachEndpoint1();
+                } else if (state.phase === 3 && state.volume >= state.v2_target) {
+                    state.volume = state.v2_target;
+                    reachEndpoint2();
+                }
+                
+                updateVisuals();
+            }, 50); // 50ms cho 0.05mL
+        }
+
+        function stopTitration() {
+            state.isTitrating = false;
+            clearInterval(state.titrationInterval);
+            
+            // Đóng khóa buret
+            ui.valveHandle.style.transform = "rotate(0deg)";
+            
+            // Tắt cá từ
+            ui.stirBar.classList.remove('spin-flat');
+            
+            // Tắt hiệu ứng giọt nước
+            ui.dropAnim.classList.add('hidden');
+            ui.dropAnim.classList.remove('animate-drop');
+            
+            // Đổi lại giao diện nút
+            ui.btnTitrate.classList.replace('bg-red-600', 'bg-green-600');
+            ui.btnTitrate.classList.replace('hover:bg-red-700', 'hover:bg-green-700');
+            ui.btnTitrateText.innerText = "Mở khóa Buret (Nhỏ giọt)";
+            
+            logStatus("Đã khóa buret.", "action");
+            updateGuidance();
+        }
+
+        function reachEndpoint1() {
+            stopTitration();
+            state.phase = 2;
+            state.v1_recorded = state.volume;
+            updateVisuals();
+            
+            logStatus(`Phản ứng đổi màu (Hồng &rarr; Không màu). Đã đạt điểm dừng GĐ1.`, "alert");
+            logStatus(`Ghi nhận V<sub>1</sub> = ${state.v1_recorded.toFixed(2)} mL.`, "info");
+            updateGuidance();
+        }
+
+        function reachEndpoint2() {
+            stopTitration();
+            state.phase = 4;
+            state.v2_recorded = state.volume;
+            updateVisuals();
+            
+            logStatus(`Phản ứng đổi màu (Vàng &rarr; Cam). Đã đạt điểm dừng GĐ2.`, "alert");
+            logStatus(`Ghi nhận tổng thể tích V<sub>2</sub> = ${state.v2_recorded.toFixed(2)} mL.`, "info");
+            showResults();
+            updateGuidance();
+        }
+
+        function showResults() {
+            ui.resultsSec.classList.remove('hidden');
+            ui.resV1.innerText = `${state.v1_recorded.toFixed(2)} mL`;
+            ui.resV2.innerText = `${state.v2_recorded.toFixed(2)} mL`;
+            
+            const vNaoh = (2 * state.v1_recorded) - state.v2_recorded;
+            const vNa2co3 = 2 * (state.v2_recorded - state.v1_recorded);
+            
+            ui.resVNaohCalc.innerText = `= 2 × ${state.v1_recorded.toFixed(2)} - ${state.v2_recorded.toFixed(2)} = ${vNaoh.toFixed(2)} mL`;
+            ui.resVNa2co3Calc.innerText = `= 2 × (${state.v2_recorded.toFixed(2)} - ${state.v1_recorded.toFixed(2)}) = ${vNa2co3.toFixed(2)} mL`;
+            
+            // Tính toán %
+            const m_sample = 0.08;
+            const pct_naoh = (vNaoh * 0.1 * 40) / (1000 * m_sample) * 100;
+            const pct_na2co3 = (vNa2co3 * 0.1 * 53) / (1000 * m_sample) * 100;
+            
+            ui.resPctNaoh.innerText = `= ${pct_naoh.toFixed(2)} %`;
+            ui.resPctNa2co3.innerText = `= ${pct_na2co3.toFixed(2)} %`;
+            
+            logStatus("Quá trình chuẩn độ hoàn tất.", "info");
+        }
+
+        // --- EVENT LISTENERS ---
+        // Xử lý bằng Javascript logic thay vì dùng attribute "disabled" làm mờ nút
+        
+        ui.btnPP.addEventListener('click', () => {
+            if (state.phase === 0) {
+                state.phase = 1;
+                updateVisuals();
+                updateGuidance();
+                logStatus("Đã thêm PP. Dung dịch chuyển màu Hồng (môi trường bazơ).", "action");
+            } else {
+                logStatus("Không thể thêm PP ở bước này.", "alert");
+            }
+        });
+
+        ui.btnMO.addEventListener('click', () => {
+            if (state.phase === 2) {
+                state.phase = 3;
+                updateVisuals();
+                updateGuidance();
+                logStatus("Đã thêm MO. Dung dịch chuyển màu Vàng (Na₂CO₃ đã thành NaHCO₃).", "action");
+            } else if (state.phase < 2) {
+                logStatus("Bạn phải hoàn thành chuẩn độ với PP (Giai đoạn 1) trước.", "alert");
+            } else {
+                logStatus("Không cần thêm MO nữa.", "alert");
+            }
+        });
+
+        ui.btnTitrate.addEventListener('click', () => {
+            if (state.phase === 0) {
+                logStatus("Vui lòng thêm chỉ thị PP trước khi mở buret.", "alert");
+                return;
+            }
+            if (state.phase === 2) {
+                logStatus("Vui lòng thêm chỉ thị MO trước khi chuẩn độ Giai đoạn 2.", "alert");
+                return;
+            }
+            if (state.phase === 4) {
+                logStatus("Phép chuẩn độ đã hoàn tất.", "alert");
+                return;
+            }
+
+            if (state.isTitrating) {
+                stopTitration();
+            } else {
+                startTitration();
+            }
+        });
+
+        ui.btnReset.addEventListener('click', () => {
+            ui.resultsSec.classList.add('hidden');
+            ui.statusLog.innerHTML = '<li><span class="text-blue-600 font-bold">[Hệ thống]</span> Đã nạp mẫu thử mới vào bình nón. Vui lòng thêm chỉ thị PP.</li>';
+            generateSample();
+        });
+
+        // Khởi tạo ban đầu
+        generateSample();
+
+    </script>
+</body>
+</html>
